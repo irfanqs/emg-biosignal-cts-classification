@@ -1,0 +1,216 @@
+{
+  "project_info": {
+    "name": "EMG Biosignal Classification",
+    "version": "2.1.0",
+    "description": "CTS Severity Detection - OPTIMIZED FOR 60%+ ACCURACY",
+    "author": "",
+    "date_created": "2025-12-04"
+  },
+
+  "data": {
+    "base_directory": "D:\\Belajar\\Mr.Koder\\biosignal project\\data",
+    "signal_types": {
+      "full_data": "Full_Data",
+      "motorik": "Motorik",
+      "sensorik": "Sensorik"
+    },
+    "classes": ["non_cts", "mild", "moderate", "severe"],
+    "class_mapping": {
+      "non_cts": 0,
+      "mild": 1,
+      "moderate": 2,
+      "severe": 3
+    },
+    "max_files_per_class": null,
+    "file_extensions": [".txt", ".csv", ".TXT", ".CSV"]
+  },
+
+  "signal_processing": {
+    "sampling_rate": 12804,
+    "auto_detect_sampling_rate": true
+  },
+
+  "preprocessing": {
+    "segment_length_seconds": 0.05,
+    "segment_overlap": 0.3,
+    "min_segment_length": 100,
+
+    "apply_bandpass_filter": true,
+    "bandpass_lowcut": 20,
+    "bandpass_highcut": 500,
+    "bandpass_order": 4,
+
+    "apply_notch_filter": true,
+    "notch_frequency": 50,
+    "notch_quality_factor": 30,
+
+    "normalization_method": "zscore",
+
+    "augmentation": {
+      "enabled": true,
+      "gaussian_noise": {
+        "enabled": true,
+        "threshold": 0.1
+      }
+    }
+  },
+
+  "feature_extraction": {
+    "method": "stft",
+    "stft": {
+      "window_size": 256,
+      "overlap": 192,
+      "window_type": "hann",
+      "n_frames": 20
+    },
+    "spectrogram": {
+      "target_size": [256, 256],
+      "representation": "log_power",
+      "normalize": true,
+      "normalize_method": "minmax"
+    }
+  },
+
+  "models": {
+    "available_models": [
+      {
+        "name": "standard_cnn",
+        "type": "standard_cnn",
+        "architecture": "standard",
+        "description": "Convolutional Neural Network - OPTIMIZED",
+        "params": {
+          "num_filters": 32,
+          "dropout_rate": 0.5,
+          "kernel_regularizer": 0.001,
+          "use_batch_norm": true
+        }
+      },
+      {
+        "name": "standard_lstm",
+        "type": "standard_lstm",
+        "architecture": "standard",
+        "description": "Bidirectional LSTM",
+        "params": {
+          "lstm_units": 128,
+          "dropout_rate": 0.4,
+          "recurrent_dropout": 0.3,
+          "use_bidirectional": true
+        }
+      },
+      {
+        "name": "standard_cnn_lstm",
+        "type": "standard_cnn_lstm",
+        "architecture": "standard",
+        "description": "Hybrid CNN-LSTM - OPTIMIZED",
+        "params": {
+          "num_filters": 32,
+          "lstm_units": 64,
+          "dropout_rate": 0.5,
+          "use_batch_norm": true
+        }
+      }
+    ],
+    "default_models": ["standard_cnn", "standard_lstm", "standard_cnn_lstm"]
+  },
+
+  "training": {
+    "data_split": {
+      "train_size": 0.7,
+      "validation_size": 0.15,
+      "test_size": 0.15,
+      "stratify": true,
+      "random_state": 42
+    },
+
+    "hyperparameters": {
+      "epochs": 30,
+      "batch_size": 3,
+      "learning_rate": 0.005,
+      "optimizer": "adam",
+      "optimizer_options": ["adam", "adamw", "sgd", "rmsprop"],
+      "loss": "sparse_categorical_crossentropy",
+      "metrics": ["accuracy"]
+    },
+
+    "callbacks": {
+      "early_stopping": {
+        "enabled": true,
+        "monitor": "val_accuracy",
+        "patience": 10,
+        "restore_best_weights": true,
+        "mode": "max"
+      },
+      "reduce_lr_on_plateau": {
+        "enabled": true,
+        "monitor": "val_loss",
+        "factor": 0.5,
+        "patience": 5,
+        "min_lr": 1e-5,
+        "mode": "min"
+      },
+      "model_checkpoint": {
+        "enabled": true,
+        "monitor": "val_accuracy",
+        "save_best_only": true,
+        "mode": "max"
+      }
+    },
+
+    "class_weights": {
+      "enabled": true,
+      "method": "balanced"
+    },
+
+    "verbose": 1
+  },
+
+  "cross_validation": {
+    "enabled": false,
+    "n_splits": 5,
+    "stratify": true,
+    "random_state": 42
+  },
+
+  "evaluation": {
+    "metrics": [
+      "accuracy",
+      "precision",
+      "recall",
+      "f1_score",
+      "confusion_matrix"
+    ],
+    "save_predictions": true,
+    "save_probabilities": true,
+    "generate_plots": true
+  },
+
+  "output": {
+    "experiments_dir": "experiments",
+    "save_models": true,
+    "save_history": true,
+    "save_metadata": true,
+    "save_plots": true,
+    "save_logs": true,
+    "generate_report": true,
+    "report_format": "markdown"
+  },
+
+  "logging": {
+    "enabled": true,
+    "level": "INFO",
+    "log_to_file": true,
+    "log_to_console": true,
+    "log_file": "experiment.log"
+  },
+
+  "performance": {
+    "use_gpu": true,
+    "gpu_memory_growth": true,
+    "mixed_precision": false
+  },
+
+  "reproducibility": {
+    "random_seed": 42,
+    "deterministic": false
+  }
+}
