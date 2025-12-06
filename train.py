@@ -3,6 +3,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split, StratifiedKFold
 from sklearn.utils.class_weight import compute_class_weight
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from imblearn.over_sampling import SMOTE
 import tensorflow as tf
 from tensorflow.keras.callbacks import (
     EarlyStopping, ReduceLROnPlateau, ModelCheckpoint, 
@@ -191,14 +192,77 @@ class DataSplitter:
         self.test_size = test_size
         self.random_state = random_state
     
-    def split_data(self, X, y, stratify=True):
+    def apply_smote(self, X, y, k_neighbors=3, sampling_strategy='auto'):
+        """
+        Apply SMOTE oversampling to balance minority classes
+        
+        Args:
+            X (array): Features (raw signals or spectrograms)
+            y (array): Labels
+            k_neighbors (int): Number of nearest neighbors for SMOTE (default: 3)
+            sampling_strategy (str or dict): Sampling strategy
+                - 'auto': balance all classes to majority
+                - dict: {class: n_samples} for custom balancing
+        
+        Returns:
+            tuple: (X_resampled, y_resampled)
+        """
+        print(f"\n{'='*70}")
+        print("SMOTE OVERSAMPLING")
+        print(f"{'='*70}")
+        
+        # Original distribution
+        unique, counts = np.unique(y, return_counts=True)
+        print(f"\nOriginal class distribution:")
+        for cls, count in zip(unique, counts):
+            print(f"  Class {cls}: {count} samples ({count/len(y)*100:.1f}%)")
+        
+        # Flatten features if needed for SMOTE (it expects 2D)
+        original_shape = X[0].shape if hasattr(X[0], 'shape') else None
+        if original_shape and len(original_shape) > 1:
+            # Flatten spectrograms/images to 1D for SMOTE
+            X_flat = np.array([x.flatten() for x in X])
+        else:
+            X_flat = np.array(X)
+        
+        # Apply SMOTE
+        try:
+            smote = SMOTE(random_state=self.random_state, k_neighbors=k_neighbors, sampling_strategy=sampling_strategy)
+            X_resampled_flat, y_resampled = smote.fit_resample(X_flat, y)
+            
+            # Reshape back if needed
+            if original_shape and len(original_shape) > 1:
+                X_resampled = X_resampled_flat.reshape(-1, *original_shape)
+            else:
+                X_resampled = X_resampled_flat
+            
+            # New distribution
+            unique, counts = np.unique(y_resampled, return_counts=True)
+            print(f"\nAfter SMOTE class distribution:")
+            for cls, count in zip(unique, counts):
+                print(f"  Class {cls}: {count} samples ({count/len(y_resampled)*100:.1f}%)")
+            
+            print(f"\nTotal samples: {len(y)} → {len(y_resampled)} (+{len(y_resampled)-len(y)} synthetic)")
+            print(f"{'='*70}\n")
+            
+            return X_resampled, y_resampled
+            
+        except Exception as e:
+            print(f"\n⚠ SMOTE failed: {e}")
+            print("Continuing with original data...\n")
+            return X, y
+    
+    def split_data(self, X, y, stratify=True, apply_smote=False, smote_k_neighbors=3):
         """
         Split data into train (70%), validation (15%), and test (15%) sets
+        with optional SMOTE oversampling on training data only
         
         Args:
             X (array): Features
             y (array): Labels
             stratify (bool): Whether to stratify splits
+            apply_smote (bool): Whether to apply SMOTE on training data
+            smote_k_neighbors (int): K neighbors for SMOTE
             
         Returns:
             tuple: (X_train, X_val, X_test, y_train, y_val, y_test)
@@ -229,6 +293,10 @@ class DataSplitter:
             random_state=self.random_state,
             stratify=stratify_param
         )
+        
+        # Apply SMOTE to training data only (not val/test!)
+        if apply_smote:
+            X_train, y_train = self.apply_smote(X_train, y_train, k_neighbors=smote_k_neighbors)
         
         # Verify actual split ratios
         total_samples = len(y)
@@ -363,8 +431,9 @@ class ModelTrainer:
     def train_model(self, X_train, y_train, X_val=None, y_val=None,
                epochs=30, batch_size=3, use_class_weights=True,  
                verbose=1, early_stopping_patience=10, learning_rate=0.005,  
-               optimizer='adam', save_plots=True, plots_dir=None):
-        """Train model dengan enhanced configuration"""
+               optimizer='adam', save_plots=True, plots_dir=None, 
+               use_focal_loss=True):
+        """Train model dengan enhanced configuration + Focal Loss\"\"\"
         
         # Reshape data
         X_train_reshaped = self.reshape_input_data(X_train)
@@ -376,21 +445,36 @@ class ModelTrainer:
         
         self.build_model(input_shape, num_classes)
         
-        # Compile dengan optimizer yang dipilih
-        if optimizer == 'sgd':
-            opt = tf.keras.optimizers.SGD(learning_rate=learning_rate, momentum=0.9, nesterov=True)
-        else:
-            opt = tf.keras.optimizers.Adam(learning_rate=learning_rate, beta_1=0.9, beta_2=0.999)
+        # Calculate class counts for Focal Loss
+        unique, counts = np.unique(y_train, return_counts=True)
+        class_counts = dict(zip(unique, counts))
         
-        opt = tf.keras.optimizers.get({
-        'class_name': opt.__class__.__name__,
-        'config': {**opt.get_config(), 'clipnorm': 1.0}  # Gradient clipping
-    })
-        self.model.model.compile(
-            optimizer=opt,
-            loss='sparse_categorical_crossentropy',
-            metrics=['accuracy']
-        )
+        # Compile with Focal Loss if enabled
+        if use_focal_loss:
+            print(f\"\\n\u2713 Enabling Focal Loss (gamma=2.0) for imbalanced classification\")
+            self.model.compile_model(
+                learning_rate=learning_rate,
+                optimizer_type=optimizer,
+                use_focal_loss=True,
+                class_counts=class_counts
+            )
+        else:
+            # Standard compilation
+            if optimizer == 'sgd':
+                opt = tf.keras.optimizers.SGD(learning_rate=learning_rate, momentum=0.9, nesterov=True)
+            else:
+                opt = tf.keras.optimizers.Adam(learning_rate=learning_rate, beta_1=0.9, beta_2=0.999)
+            
+            opt = tf.keras.optimizers.get({
+                'class_name': opt.__class__.__name__,
+                'config': {**opt.get_config(), 'clipnorm': 1.0}
+            })
+            self.model.model.compile(
+                optimizer=opt,
+                loss='sparse_categorical_crossentropy',
+                metrics=['accuracy']
+            )
+        
         print(f"[DEBUG] Model compiled successfully")
         print(f"[DEBUG] Model summary:")
         self.model.model.summary()
@@ -545,8 +629,8 @@ class ModelTrainer:
 
 
 def train_multiple_models(X, y, class_names, models_config,
-                         save_dir='trained_models', **train_params):
-    """Train multiple models with progress tracking"""
+                         save_dir='trained_models', use_smote=True, use_focal_loss=True, **train_params):
+    """Train multiple models with progress tracking, SMOTE oversampling, and Focal Loss"""
     from utils import ProgressBar
 
     print("\n" + "="*80)
@@ -594,9 +678,18 @@ def train_multiple_models(X, y, class_names, models_config,
         if X.shape[1:3] != (64, 64):
             raise ValueError(f"Expected 64x64 spectrograms, got {X.shape[1:3]}")
     
-    # Split data
+    # Split data with SMOTE oversampling
     splitter = DataSplitter(train_size=0.70, val_size=0.15, test_size=0.15)
-    X_train, X_val, X_test, y_train, y_val, y_test = splitter.split_data(X, y)
+    X_train, X_val, X_test, y_train, y_val, y_test = splitter.split_data(
+        X, y, 
+        apply_smote=use_smote, 
+        smote_k_neighbors=3
+    )
+    
+    # Calculate class counts for Focal Loss (from ORIGINAL y_train before any weighting)
+    unique, counts = np.unique(y_train, return_counts=True)
+    class_counts = dict(zip(unique, counts))
+    print(f"\nClass counts for Focal Loss: {class_counts}")
     
     # Store split info
     split_data = {

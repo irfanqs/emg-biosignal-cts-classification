@@ -137,7 +137,14 @@
 			"optimizer": "adam",
 			"optimizer_options": ["adam", "adamw", "sgd", "rmsprop"],
 			"loss": "sparse_categorical_crossentropy",
-			"metrics": ["accuracy"]
+			"metrics": ["accuracy"],
+
+			"use_smote": true,
+			"smote_k_neighbors": 3,
+			"use_focal_loss": true,
+			"focal_loss_gamma": 2.0,
+			"use_class_weights": true,
+			"class_weight_multiplier": 1.2
 		},
 
 		"callbacks": {

@@ -12,6 +12,7 @@ from tensorflow.keras.optimizers import Adam, SGD, RMSprop
 from tensorflow.keras.regularizers import l1_l2
 from tensorflow.keras.initializers import HeNormal, GlorotUniform
 from tensorflow.keras.constraints import MaxNorm
+from focal_loss import get_focal_loss
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -110,8 +111,15 @@ class StandardCNNModel:
         self.model = Model(inputs, outputs, name='ImprovedCNN_3Blocks')
         return self.model
     
-    def compile_model(self, learning_rate=0.001, optimizer_type='adam'):
-        """Compile model dengan learning rate HIGHER untuk small dataset convergence"""
+    def compile_model(self, learning_rate=0.001, optimizer_type='adam', loss='sparse_categorical_crossentropy', use_focal_loss=False, class_counts=None):
+        """Compile model with optional Focal Loss for imbalanced data"""
+        # Use Focal Loss if specified
+        if use_focal_loss:
+            loss_fn = get_focal_loss(num_classes=self.num_classes, gamma=2.0, class_counts=class_counts)
+            print("\n✓ Using Focal Loss (gamma=2.0) for imbalanced classification")
+        else:
+            loss_fn = loss
+        
         # For small dataset (683 samples), use HIGHER lr for faster convergence
         if optimizer_type == 'sgd':
             optimizer = SGD(learning_rate=learning_rate, 
@@ -239,8 +247,14 @@ class StandardLSTMModel:
         self.model = Model(inputs, outputs, name='OptimizedLSTM_3Blocks')
         return self.model
     
-    def compile_model(self, learning_rate=0.005, optimizer_type='adam'):
-        """Compile model dengan LR tinggi"""
+    def compile_model(self, learning_rate=0.005, optimizer_type='adam', loss='sparse_categorical_crossentropy', use_focal_loss=False, class_counts=None):
+        """Compile model dengan LR tinggi and optional Focal Loss"""
+        # Use Focal Loss if specified
+        if use_focal_loss:
+            loss_fn = get_focal_loss(num_classes=self.num_classes, gamma=2.0, class_counts=class_counts)
+        else:
+            loss_fn = loss
+        
         if optimizer_type == 'sgd':
             optimizer = SGD(learning_rate=learning_rate, 
                            momentum=0.9, 
@@ -367,8 +381,14 @@ class StandardCNNLSTMModel:
         self.model = Model(inputs, outputs, name='OptimizedCNNLSTM_3CNN_2LSTM')
         return self.model
     
-    def compile_model(self, learning_rate=0.005, optimizer_type='adam'):
-        """Compile model"""
+    def compile_model(self, learning_rate=0.005, optimizer_type='adam', loss='sparse_categorical_crossentropy', use_focal_loss=False, class_counts=None):
+        """Compile model with optional Focal Loss"""
+        # Use Focal Loss if specified
+        if use_focal_loss:
+            loss_fn = get_focal_loss(num_classes=self.num_classes, gamma=2.0, class_counts=class_counts)
+        else:
+            loss_fn = loss
+        
         if optimizer_type == 'sgd':
             optimizer = SGD(learning_rate=learning_rate, 
                            momentum=0.9, 
@@ -384,7 +404,7 @@ class StandardCNNLSTMModel:
         
         self.model.compile(
             optimizer=optimizer,
-            loss='sparse_categorical_crossentropy',
+            loss=loss_fn,
             metrics=['accuracy']
         )
 
