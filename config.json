@@ -66,8 +66,8 @@
 	"feature_extraction": {
 		"method": "stft",
 		"stft": {
-			"window_size": 128,
-			"overlap": 64,
+			"window_size": 64,
+			"overlap": 48,
 			"window_type": "hann",
 			"n_frames": null
 		},
@@ -218,3 +218,4 @@
 		"deterministic": false
 	}
 }
+
