@@ -501,7 +501,7 @@ def create_default_config():
                 'params': {
                     'num_filters': 64,
                     'dropout_rate': 0.4,
-                    'input_shape': [256, 256, 1],
+                    'input_shape': [64, 64, 1],
                     'num_classes': 4
                 }
             },
@@ -512,7 +512,7 @@ def create_default_config():
                 'params': {
                     'lstm_units': 64,
                     'dropout_rate': 0.3,
-                    'input_shape': [256 * 256],
+                    'input_shape': [64 * 64],
                     'num_classes': 4
                 }
             },
@@ -524,7 +524,7 @@ def create_default_config():
                     'num_filters': 64,
                     'lstm_units': 64,
                     'dropout_rate': 0.35,
-                    'input_shape': [256, 256, 1],
+                    'input_shape': [64, 64, 1],
                     'num_classes': 4
                 }
             }

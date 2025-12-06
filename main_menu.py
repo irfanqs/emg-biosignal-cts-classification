@@ -440,15 +440,18 @@ def run_single_signal_pipeline(base_dir, signal_type, selected_models, config=No
         os.makedirs(experiment_dir, exist_ok=True)
         
         models_config = []
+        # Get target size from config
+        target_h, target_w = config.get('feature_extraction', {}).get('spectrogram', {}).get('target_size', [64, 64])
+        
         for model_type in selected_models:
             if model_type == 'standard_cnn':
-                input_shape = [256, 256, 1]
+                input_shape = [target_h, target_w, 1]
             elif model_type == 'standard_lstm':
-                input_shape = [256 * 256]  # Flattened untuk LSTM
+                input_shape = [target_h * target_w]  # Flattened untuk LSTM
             elif model_type == 'standard_cnn_lstm':
-                input_shape = [256, 256, 1]
+                input_shape = [target_h, target_w, 1]
             else:
-                input_shape = [256, 256, 1]
+                input_shape = [target_h, target_w, 1]
             config_entry = {
                 'name': f'{folder_name.lower()}_{model_type}',
                 'type': model_type,
