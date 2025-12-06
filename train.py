@@ -62,8 +62,12 @@ class EnhancedTrainingCallback(Callback):
         acc = logs.get('accuracy', 0)
         val_loss = logs.get('val_loss', 0)
         val_acc = logs.get('val_accuracy', 0)
-        lr = float(tf.keras.backend.get_value(self.model.optimizer.lr))
-        
+        opt = self.model.optimizer
+        if hasattr(opt, "lr"):
+            lr = float(tf.keras.backend.get_value(opt.lr))
+        else:
+            lr = float(tf.keras.backend.get_value(opt.learning_rate))
+
         # Store history
         self.history_tracker['loss'].append(loss)
         self.history_tracker['accuracy'].append(acc)
@@ -553,10 +557,10 @@ def train_multiple_models(X, y, class_names, models_config,
 
     if len(X.shape) >= 3:
         spec_size = X.shape[1:3]
-        if spec_size != (256, 256):
-            print(f"WARNING: Spectrogram size {spec_size} != (256, 256)")
+        if spec_size != (64, 64):
+            print(f"WARNING: Spectrogram size {spec_size} != (64, 64)")
         else:
-            print(f"Spectrogram size correct: 256x256")
+            print(f"Spectrogram size correct: 64x64")
 
     unique_labels, counts = np.unique(y, return_counts=True)
     print(f"\nClass distribution:")
@@ -585,8 +589,8 @@ def train_multiple_models(X, y, class_names, models_config,
     
     # Verify spectrograms
     if len(X.shape) >= 3:
-        if X.shape[1:3] != (256, 256):
-            raise ValueError(f"Expected 256x256 spectrograms, got {X.shape[1:3]}")
+        if X.shape[1:3] != (64, 64):
+            raise ValueError(f"Expected 64x64 spectrograms, got {X.shape[1:3]}")
     
     # Split data
     splitter = DataSplitter(train_size=0.70, val_size=0.15, test_size=0.15)
@@ -1238,8 +1242,12 @@ class DetailedProgressCallback(Callback):
         acc = logs.get('accuracy', 0)
         val_loss = logs.get('val_loss', 0)
         val_acc = logs.get('val_accuracy', 0)
-        lr = float(self.model.optimizer.lr.numpy())
-        
+        opt = self.model.optimizer
+        if hasattr(opt, "lr"):
+            lr = float(opt.lr.numpy())
+        else:
+            lr = float(opt.learning_rate.numpy())
+
         # Progress bar
         progress = (epoch + 1) / self.epochs
         bar_length = 40

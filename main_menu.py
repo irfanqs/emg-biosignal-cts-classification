@@ -375,7 +375,7 @@ def run_single_signal_pipeline(base_dir, signal_type, selected_models, config=No
                     # Validasi spectrograms
                     valid_spectrograms = []
                     for spec in spectrograms:
-                        if spec.shape == (256, 256) and not np.all(spec == 0):
+                        if spec.shape == (64, 64) and not np.all(spec == 0):
                             valid_spectrograms.append(spec)
                     
                     if valid_spectrograms:
@@ -387,7 +387,7 @@ def run_single_signal_pipeline(base_dir, signal_type, selected_models, config=No
                     if augment_enabled and augmented is not None:
                         valid_augmented = []
                         for spec in augmented:
-                            if spec.shape == (256, 256) and not np.all(spec == 0):
+                            if spec.shape == (64, 64) and not np.all(spec == 0):
                                 valid_augmented.append(spec)
                         
                         if valid_augmented:
@@ -418,7 +418,7 @@ def run_single_signal_pipeline(base_dir, signal_type, selected_models, config=No
         
         
         # Verify shape
-        if spectrograms.shape[1:3] != (256, 256):
+        if spectrograms.shape[1:3] != (64, 64):
             print(f"ERROR: Spectrogram shape mismatch: {spectrograms.shape[1:3]}")
             print(f"  Attempting to resize...")
         from scipy.ndimage import zoom
