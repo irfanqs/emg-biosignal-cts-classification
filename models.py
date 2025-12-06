@@ -28,14 +28,14 @@ if gpus:
 
 class StandardCNNModel:
     """
-    OPTIMIZED CNN Architecture untuk EMG Spectrogram Classification
-    - 4 Convolutional Blocks dengan residual connections
-    - BatchNorm untuk stabil training dengan batch kecil
-    - Regularization untuk mencegah overfitting
+    SIMPLIFIED CNN Architecture for SMALL DATASET (683 samples)
+    - Only 2 Convolutional Blocks (was 4 - TOO DEEP!)
+    - Lighter regularization for small data
+    - Reduced parameters to prevent overfitting
     """
     
     def __init__(self, input_shape=(64, 64, 1), num_classes=4, 
-                 num_filters=32, dropout_rate=0.5):
+                 num_filters=32, dropout_rate=0.3):
         self.input_shape = input_shape
         self.num_classes = num_classes
         self.num_filters = num_filters
@@ -43,108 +43,67 @@ class StandardCNNModel:
         self.model = None
     
     def build_model(self):
-        """Build Optimized CNN Model dengan 4 blocks"""
+        """Build SHALLOW CNN Model - 2 blocks only for small dataset"""
         inputs = Input(shape=self.input_shape, name='spectrogram_input')
         
-        # === BLOCK 1: High-level features ===
-        x1 = Conv2D(self.num_filters, (7, 7), padding='same', 
+        # === BLOCK 1: Low-level features ===
+        x1 = Conv2D(self.num_filters, (5, 5), padding='same', 
                    kernel_regularizer=l1_l2(l1=0.00001, l2=0.00001),
                    kernel_initializer=HeNormal(),
-                   kernel_constraint=MaxNorm(4))(inputs)
+                   kernel_constraint=MaxNorm(3))(inputs)
         x1 = BatchNormalization()(x1)
         x1 = Activation('relu')(x1)
-        x1 = Conv2D(self.num_filters, (7, 7), padding='same',
+        x1 = Conv2D(self.num_filters, (5, 5), padding='same',
                    kernel_regularizer=l1_l2(l1=0.00001, l2=0.00001),
-                   kernel_constraint=MaxNorm(4))(x1)
+                   kernel_constraint=MaxNorm(3))(x1)
         x1 = BatchNormalization()(x1)
         x1 = Activation('relu')(x1)
         x1 = MaxPooling2D((2, 2))(x1)  # 64x64 -> 32x32
-        x1 = Dropout(0.25)(x1)
+        x1 = Dropout(0.2)(x1)
         
-        # === BLOCK 2: Mid-level features ===
-        x2 = Conv2D(self.num_filters * 2, (5, 5), padding='same',
+        # === BLOCK 2: High-level features ===
+        x2 = Conv2D(self.num_filters * 2, (3, 3), padding='same',
                    kernel_regularizer=l1_l2(l1=0.00001, l2=0.00001),
-                   kernel_constraint=MaxNorm(4))(x1)
+                   kernel_constraint=MaxNorm(3))(x1)
         x2 = BatchNormalization()(x2)
         x2 = Activation('relu')(x2)
-        x2 = Conv2D(self.num_filters * 2, (5, 5), padding='same',
+        x2 = Conv2D(self.num_filters * 2, (3, 3), padding='same',
                    kernel_regularizer=l1_l2(l1=0.00001, l2=0.00001),
-                   kernel_constraint=MaxNorm(4))(x2)
+                   kernel_constraint=MaxNorm(3))(x2)
         x2 = BatchNormalization()(x2)
         x2 = Activation('relu')(x2)
-        x2 = MaxPooling2D((2, 2))(x2)  # 128x128 -> 64x64
-        x2 = Dropout(0.3)(x2)
+        x2 = MaxPooling2D((2, 2))(x2)  # 32x32 -> 16x16
+        x2 = Dropout(0.25)(x2)
         
-        # === BLOCK 3: Low-level features ===
-        x3 = Conv2D(self.num_filters * 4, (3, 3), padding='same',
-                   kernel_regularizer=l1_l2(l1=0.00001, l2=0.00001),
-                   kernel_constraint=MaxNorm(4))(x2)
-        x3 = BatchNormalization()(x3)
-        x3 = Activation('relu')(x3)
-        x3 = Conv2D(self.num_filters * 4, (3, 3), padding='same',
-                   kernel_regularizer=l1_l2(l1=0.00001, l2=0.00001),
-                   kernel_constraint=MaxNorm(4))(x3)
-        x3 = BatchNormalization()(x3)
-        x3 = Activation('relu')(x3)
-        x3 = MaxPooling2D((2, 2))(x3)  # 64x64 -> 32x32
-        x3 = Dropout(0.35)(x3)
+        # === GLOBAL POOLING (no more convolutions) ===
+        x_global = GlobalAveragePooling2D()(x2)
         
-        # === BLOCK 4: Feature aggregation ===
-        x4 = Conv2D(self.num_filters * 8, (3, 3), padding='same',
-                   kernel_regularizer=l1_l2(l1=0.00001, l2=0.00001),
-                   kernel_constraint=MaxNorm(4))(x3)
-        x4 = BatchNormalization()(x4)
-        x4 = Activation('relu')(x4)
-        x4 = Conv2D(self.num_filters * 8, (3, 3), padding='same',
-                   kernel_regularizer=l1_l2(l1=0.00001, l2=0.00001),
-                   kernel_constraint=MaxNorm(4))(x4)
-        x4 = BatchNormalization()(x4)
-        x4 = Activation('relu')(x4)
-        x4 = GlobalAveragePooling2D()(x4)  # 32x32 -> vector
-        x4 = Dropout(0.4)(x4)
-        
-        # === MULTI-SCALE FEATURE FUSION ===
-        # Global features dari setiap block
-        g1 = GlobalAveragePooling2D()(x1)
-        g2 = GlobalAveragePooling2D()(x2)
-        g3 = GlobalAveragePooling2D()(x3)
-        
-        # Gabungkan features dari semua scales
-        fused = concatenate([g1, g2, g3, x4])
-        
-        # === DENSE LAYERS dengan residual ===
+        # === SIMPLIFIED DENSE LAYERS ===
         # Dense layer 1
-        d1 = Dense(512, kernel_regularizer=l1_l2(l1=0.00001, l2=0.00001),
+        d1 = Dense(128, kernel_regularizer=l1_l2(l1=0.00001, l2=0.00001),
                   kernel_initializer=HeNormal(),
-                  kernel_constraint=MaxNorm(4))(fused)
+                  kernel_constraint=MaxNorm(3))(x_global)
         d1 = BatchNormalization()(d1)
         d1 = Activation('relu')(d1)
-        d1 = Dropout(0.4)(d1)
+        d1 = Dropout(0.3)(d1)
         
-        # Dense layer 2 dengan skip connection
-        d2 = Dense(256, kernel_regularizer=l1_l2(l1=0.00001, l2=0.00001),
+        # Dense layer 2
+        d2 = Dense(64, kernel_regularizer=l1_l2(l1=0.00001, l2=0.00001),
                   kernel_initializer=HeNormal(),
-                  kernel_constraint=MaxNorm(4))(d1)
+                  kernel_constraint=MaxNorm(3))(d1)
         d2 = BatchNormalization()(d2)
         d2 = Activation('relu')(d2)
-        d2 = Dropout(0.35)(d2)
-        
-        # Dense layer 3
-        d3 = Dense(128, kernel_regularizer=l1_l2(l1=0.00001, l2=0.00001),
-                  kernel_constraint=MaxNorm(4))(d2)
-        d3 = BatchNormalization()(d3)
-        d3 = Activation('relu')(d3)
-        d3 = Dropout(0.3)(d3)
+        d2 = Dropout(0.2)(d2)
         
         # === OUTPUT LAYER ===
-        outputs = Dense(self.num_classes, activation='softmax')(d3)
+        outputs = Dense(self.num_classes, activation='softmax')(d2)
         
-        self.model = Model(inputs, outputs, name='OptimizedCNN_4Blocks')
+        self.model = Model(inputs, outputs, name='SimplifiedCNN_2Blocks')
         return self.model
     
-    def compile_model(self, learning_rate=0.0001, optimizer_type='adam'):
-        """Compile model dengan learning rate optimal untuk batch 16"""
-        # Untuk batch 16, learning rate lebih kecil
+    def compile_model(self, learning_rate=0.001, optimizer_type='adam'):
+        """Compile model dengan learning rate HIGHER untuk small dataset convergence"""
+        # For small dataset (683 samples), use HIGHER lr for faster convergence
         if optimizer_type == 'sgd':
             optimizer = SGD(learning_rate=learning_rate, 
                            momentum=0.9, 

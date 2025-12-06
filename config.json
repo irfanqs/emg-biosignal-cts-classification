@@ -66,8 +66,8 @@
 	"feature_extraction": {
 		"method": "stft",
 		"stft": {
-			"window_size": 128,
-			"overlap": 64,
+			"window_size": 64,
+			"overlap": 48,
 			"window_type": "hann",
 			"n_frames": null
 		},
@@ -132,7 +132,7 @@
 
 		"hyperparameters": {
 			"epochs": 100,
-			"batch_size": 8,
+			"batch_size": 16,
 			"learning_rate": 0.001,
 			"optimizer": "adam",
 			"optimizer_options": ["adam", "adamw", "sgd", "rmsprop"],

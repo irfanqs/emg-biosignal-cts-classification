@@ -13,77 +13,35 @@ from models import ModelBuilder
 from train import DataSplitter, ModelTrainer, train_multiple_models, cross_validate_models
 from evaluate import ModelEvaluator
 from utils import FileUtils, PlotUtils, LogUtils, print_system_info, DetailedProgressTracker
+from emg_data_loader import EMGDataLoader as ProperEMGDataLoader
 
 
 class EMGDataLoader:
-    """Load EMG data dari struktur folder"""
+    """
+    DEPRECATED: Simple loader - replaced by ProperEMGDataLoader
+    This class is kept for backward compatibility but uses ProperEMGDataLoader internally
+    """
     
     def __init__(self, data_directory):
         self.data_directory = data_directory
-        self.class_mapping = {
-            'non_cts': 0,
-            'mild': 1, 
-            'moderate': 2,
-            'severe': 3
-        }
+        self.proper_loader = ProperEMGDataLoader(data_directory)
+        self.class_mapping = self.proper_loader.class_mapping
     
     def scan_emg_files(self):
-        """Scan semua EMG files"""
-        file_paths = {}
-        
-        for class_name in self.class_mapping.keys():
-            class_dir = os.path.join(self.data_directory, class_name)
-            if os.path.exists(class_dir):
-                files = [f for f in os.listdir(class_dir) 
-                        if f.endswith(('.txt', '.csv'))]
-                file_paths[class_name] = [os.path.join(class_dir, f) for f in files]
-            else:
-                file_paths[class_name] = []
-        
-        return file_paths
+        """Delegate to proper loader"""
+        return self.proper_loader.scan_emg_files()
     
     def load_single_file(self, filepath):
-        """Load single EMG file"""
-        try:
-            data = np.loadtxt(filepath)
-            if len(data.shape) == 1:
-                data = data.reshape(-1, 1)
-            return data
-        except Exception as e:
-            print(f"Error loading {filepath}: {e}")
-            return None
+        """Delegate to proper loader"""
+        data, metadata = self.proper_loader.load_single_file(filepath)
+        return data
     
     def load_all_emg_data(self, max_files_per_class=None):
-        """Load semua EMG data"""
-        file_paths = self.scan_emg_files()
-        
-        all_signals = []
-        all_labels = []
-        signal_info = []
-        
-        for class_name, files in file_paths.items():
-            if max_files_per_class:
-                files = files[:max_files_per_class]
-            
-            class_label = self.class_mapping[class_name]
-            
-            for filepath in files:
-                signal = self.load_single_file(filepath)
-                if signal is not None:
-                    if signal.shape[1] > 1:
-                        all_signals.append(signal)
-                    else:
-                        all_signals.append(signal)
-                    
-                    all_labels.append(class_label)
-                    signal_info.append({
-                        'filepath': filepath,
-                        'class': class_name,
-                        'label': class_label,
-                        'shape': signal.shape
-                    })
-        
-        return all_signals, np.array(all_labels), signal_info
+        """Delegate to proper loader"""
+        return self.proper_loader.load_all_emg_data(
+            max_files_per_class=max_files_per_class,
+            use_metadata=False  # Keep simple interface
+        )
 
 
 class EMGPipeline:
