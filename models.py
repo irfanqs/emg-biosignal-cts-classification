@@ -94,7 +94,7 @@ class StandardCNNModel:
                   kernel_constraint=MaxNorm(3))(x_global)
         d1 = BatchNormalization()(d1)
         d1 = Activation('relu')(d1)
-        d1 = Dropout(0.4)(d1)
+        d1 = Dropout(0.35)(d1)
         
         # Dense layer 2
         d2 = Dense(64, kernel_regularizer=l1_l2(l1=0.00001, l2=0.00001),
@@ -102,7 +102,7 @@ class StandardCNNModel:
                   kernel_constraint=MaxNorm(3))(d1)
         d2 = BatchNormalization()(d2)
         d2 = Activation('relu')(d2)
-        d2 = Dropout(0.35)(d2)
+        d2 = Dropout(0.3)(d2)
         
         # === OUTPUT LAYER ===
         outputs = Dense(self.num_classes, activation='softmax')(d2)

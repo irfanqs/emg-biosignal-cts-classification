@@ -350,8 +350,8 @@ class ModelTrainer:
         """Compute class weights untuk imbalanced data"""
         unique_classes = np.unique(y)
         weights = compute_class_weight('balanced', classes=unique_classes, y=y)
-        # Multiply by 1.5 for stronger emphasis on minority classes
-        weights = weights * 1.5
+        # Multiply by 1.2 for moderate emphasis on minority classes
+        weights = weights * 1.2
         self.class_weights = dict(zip(unique_classes, weights))
         
         print(f"\nClass Weights:")

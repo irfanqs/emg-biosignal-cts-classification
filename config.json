@@ -131,9 +131,9 @@
 		},
 
 		"hyperparameters": {
-			"epochs": 150,
+			"epochs": 120,
 			"batch_size": 16,
-			"learning_rate": 0.0003,
+			"learning_rate": 0.0005,
 			"optimizer": "adam",
 			"optimizer_options": ["adam", "adamw", "sgd", "rmsprop"],
 			"loss": "sparse_categorical_crossentropy",

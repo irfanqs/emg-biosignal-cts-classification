@@ -353,22 +353,22 @@ class EMGPreprocessor:
                 spectrograms.append(spectrogram)
                 
                 if augment_with_noise:
-                    # Increased noise level for better diversity
-                    noisy_segment = self.add_gaussian_noise(segment, noise_threshold=0.08)
+                    # Moderate noise level for balanced augmentation
+                    noisy_segment = self.add_gaussian_noise(segment, noise_threshold=0.06)
                     noisy_spec = self.generate_stft_spectrogram(noisy_segment)
                     if noisy_spec is not None and not np.all(noisy_spec == 0):
                         augmented_spectrograms.append(noisy_spec)
                 
                 if augment_time_shift:
-                    # Stronger time shift
-                    shifted_segment = self.add_time_shift_augmentation(segment, max_shift=0.1)
+                    # Moderate time shift
+                    shifted_segment = self.add_time_shift_augmentation(segment, max_shift=0.07)
                     shifted_spec = self.generate_stft_spectrogram(shifted_segment)
                     if shifted_spec is not None and not np.all(shifted_spec == 0):
                         augmented_spectrograms.append(shifted_spec)
                 
                 if augment_amplitude:
-                    # Stronger amplitude scaling
-                    scaled_segment = self.add_amplitude_scaling(segment, scale_range=(0.85, 1.15))
+                    # Moderate amplitude scaling
+                    scaled_segment = self.add_amplitude_scaling(segment, scale_range=(0.9, 1.1))
                     scaled_spec = self.generate_stft_spectrogram(scaled_segment)
                     if scaled_spec is not None and not np.all(scaled_spec == 0):
                         augmented_spectrograms.append(scaled_spec)
