@@ -270,43 +270,28 @@ class EMGPreprocessor:
         """
         data_length = len(data)
     
-        print(f"\n[DEBUG] Segmenting signal:")
+        print(f"\n[DEBUG] Processing NCV signal:")
         print(f"  Data length: {data_length} samples")
-        print(f"  Required segment length: {self.segment_samples} samples")
         print(f"  Signal duration: {data_length/self.sampling_rate*1000:.1f} ms")
-        if len(data) < self.segment_samples:
-            print(f"  WARNING: Signal too short! {data_length} < {self.segment_samples}")
-            if len(data) >= min_segment_samples:
-                print(f"  Using entire signal as one segment ({data_length} samples)")
-            if data_length >= 256:
-                segment = data.astype(np.float32)
-                return np.array([segment], dtype=np.float32)
-        else:
-            print(f"  Zero-padding to {self.segment_samples} samples")
-            padded_data = np.zeros(self.segment_samples, dtype=np.float32)
-            padded_data[:data_length] = data[:self.segment_samples]
-            return np.array([padded_data], dtype=np.float32)
         
-        step = int(self.segment_samples * (1 - overlap))
-        n_segments = max(1, (data_length - self.segment_samples) // step + 1)
-        print(f"  Can generate {n_segments} segments with {overlap*100:.0f}% overlap")
-
-        segments = []
+        # For NCV data: Each file is ONE complete test (639 samples)
+        # NO SEGMENTATION NEEDED - use entire signal as-is
+        if data_length >= 200:  # Minimum viable signal length
+            print(f"  Using entire signal as one segment (NCV test)")
+            segment = data.astype(np.float32)
+            return np.array([segment], dtype=np.float32)
         
-        for i in range(0, data_length - self.segment_samples + 1, step):
-            segment = data[i:i + self.segment_samples].astype(np.float32)
-            
-            if np.all(segment == 0) or np.any(np.isnan(segment)):
-                continue
-            
-            segments.append(segment)
-
-            if len(segments) >= 20:  # Maksimal 20 segments per signal
-                break
-            if len(segments) == 0:
-                segment = data[:self.segment_samples].astype(np.float32)
-                segments.append(segment)
-            print(f"  Using first {self.segment_samples} samples as fallback")
+        # Fallback for very short signals (shouldn't happen with NCV data)
+        print(f"  WARNING: Signal too short ({data_length} samples < 200)")
+        if data_length >= min_segment_samples:
+            segment = data.astype(np.float32)
+            return np.array([segment], dtype=np.float32)
+        
+        # Last resort: zero-pad
+        print(f"  Zero-padding to {min_segment_samples} samples")
+        padded_data = np.zeros(min_segment_samples, dtype=np.float32)
+        padded_data[:data_length] = data
+        return np.array([padded_data], dtype=np.float32)
     
         print(f"  Generated {len(segments)} segments")
         return np.array(segments, dtype=np.float32)
