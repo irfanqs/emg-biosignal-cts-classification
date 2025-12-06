@@ -131,9 +131,9 @@
 		},
 
 		"hyperparameters": {
-			"epochs": 100,
+			"epochs": 150,
 			"batch_size": 16,
-			"learning_rate": 0.001,
+			"learning_rate": 0.0003,
 			"optimizer": "adam",
 			"optimizer_options": ["adam", "adamw", "sgd", "rmsprop"],
 			"loss": "sparse_categorical_crossentropy",
@@ -144,7 +144,7 @@
 			"early_stopping": {
 				"enabled": true,
 				"monitor": "val_accuracy",
-				"patience": 10,
+				"patience": 20,
 				"restore_best_weights": true,
 				"mode": "max",
 				"min_delta": 0.001
@@ -218,4 +218,3 @@
 		"deterministic": false
 	}
 }
-

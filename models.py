@@ -75,8 +75,17 @@ class StandardCNNModel:
         x2 = MaxPooling2D((2, 2))(x2)  # 32x32 -> 16x16
         x2 = Dropout(0.25)(x2)
         
+        # Convolutional Block 3 (128 filters)
+        x3 = Conv2D(128, (3, 3), padding='same',
+                   kernel_regularizer=l1_l2(l1=0.00001, l2=0.00001),
+                   kernel_constraint=MaxNorm(3))(x2)
+        x3 = BatchNormalization()(x3)
+        x3 = Activation('relu')(x3)
+        x3 = MaxPooling2D((2, 2))(x3)  # 16x16 -> 8x8
+        x3 = Dropout(0.3)(x3)
+        
         # === GLOBAL POOLING (no more convolutions) ===
-        x_global = GlobalAveragePooling2D()(x2)
+        x_global = GlobalAveragePooling2D()(x3)
         
         # === SIMPLIFIED DENSE LAYERS ===
         # Dense layer 1
@@ -85,7 +94,7 @@ class StandardCNNModel:
                   kernel_constraint=MaxNorm(3))(x_global)
         d1 = BatchNormalization()(d1)
         d1 = Activation('relu')(d1)
-        d1 = Dropout(0.3)(d1)
+        d1 = Dropout(0.4)(d1)
         
         # Dense layer 2
         d2 = Dense(64, kernel_regularizer=l1_l2(l1=0.00001, l2=0.00001),
@@ -93,12 +102,12 @@ class StandardCNNModel:
                   kernel_constraint=MaxNorm(3))(d1)
         d2 = BatchNormalization()(d2)
         d2 = Activation('relu')(d2)
-        d2 = Dropout(0.2)(d2)
+        d2 = Dropout(0.35)(d2)
         
         # === OUTPUT LAYER ===
         outputs = Dense(self.num_classes, activation='softmax')(d2)
         
-        self.model = Model(inputs, outputs, name='SimplifiedCNN_2Blocks')
+        self.model = Model(inputs, outputs, name='ImprovedCNN_3Blocks')
         return self.model
     
     def compile_model(self, learning_rate=0.001, optimizer_type='adam'):
