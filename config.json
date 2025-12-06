@@ -31,9 +31,9 @@
 	},
 
 	"preprocessing": {
-		"segment_length_seconds": 1.0,
-		"segment_overlap": 0.5,
-		"min_segment_length": 500,
+		"segment_length_seconds": 0.02,
+		"segment_overlap": 0.0,
+		"min_segment_length": 100,
 
 		"apply_bandpass_filter": true,
 		"bandpass_lowcut": 10,
@@ -47,7 +47,7 @@
 		"normalization_method": "zscore",
 
 		"augmentation": {
-			"enabled": true,
+			"enabled": false,
 			"gaussian_noise": {
 				"enabled": true,
 				"threshold": 0.05
@@ -66,13 +66,13 @@
 	"feature_extraction": {
 		"method": "stft",
 		"stft": {
-			"window_size": 256,
-			"overlap": 192,
+			"window_size": 128,
+			"overlap": 64,
 			"window_type": "hann",
-			"n_frames": 20
+			"n_frames": null
 		},
 		"spectrogram": {
-			"target_size": [256, 256],
+			"target_size": [64, 64],
 			"representation": "log_power",
 			"normalize": true,
 			"normalize_method": "minmax"
@@ -132,8 +132,8 @@
 
 		"hyperparameters": {
 			"epochs": 100,
-			"batch_size": 16,
-			"learning_rate": 0.0001,
+			"batch_size": 8,
+			"learning_rate": 0.001,
 			"optimizer": "adam",
 			"optimizer_options": ["adam", "adamw", "sgd", "rmsprop"],
 			"loss": "sparse_categorical_crossentropy",
@@ -144,7 +144,7 @@
 			"early_stopping": {
 				"enabled": true,
 				"monitor": "val_accuracy",
-				"patience": 20,
+				"patience": 10,
 				"restore_best_weights": true,
 				"mode": "max",
 				"min_delta": 0.001

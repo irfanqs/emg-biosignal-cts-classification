@@ -40,7 +40,7 @@ class EMGPreprocessor:
         
         self.window_size = window_size
         self.n_frames = n_frames
-        self.spectrogram_size = 256
+        self.spectrogram_size = 64  # Changed from 256 to 64 for short signals
             
     def bandpass_filter(self, data, lowcut=20, highcut=450, filter_order=4):
         """
@@ -138,25 +138,25 @@ class EMGPreprocessor:
         Generate STFT spectrogram - OPTIMIZED VERSION for 1.0s segments
         """
         try:
-            target_shape = (self.spectrogram_size, self.spectrogram_size)  # (256, 256)
+            target_shape = (self.spectrogram_size, self.spectrogram_size)  # (64, 64)
             signal_length = len(signal)
             
-            # === OPTIMAL PARAMETERS for 1.0s segments at 1000Hz ===
-            # Dengan 1.0s dan 1000Hz, kita punya 1000 samples
-            # STFT parameters optimal untuk EMG
+            # === OPTIMAL PARAMETERS for SHORT EMG signals (20-50ms) ===
+            # Sensorik: ~640 samples at 31949 Hz (20ms)
+            # Motorik: ~640 samples at 12804 Hz (50ms)
             
-            if signal_length >= 1000:  # Untuk segment 1.0s
-                nperseg = 256  # Window size optimal untuk frequency resolution
-                noverlap = 192  # 75% overlap untuk smooth spectrogram
-            elif signal_length >= 500:  # Untuk segment 0.5s
-                nperseg = 128
-                noverlap = 96
-            else:  # Untuk segment pendek
-                nperseg = min(64, signal_length // 2)
+            if signal_length >= 500:  # For 50ms+ signals
+                nperseg = 64  # Smaller window for short signals
+                noverlap = 48  # 75% overlap
+            elif signal_length >= 300:  # For 20-50ms signals  
+                nperseg = 32
+                noverlap = 24
+            else:  # For very short signals
+                nperseg = min(16, signal_length // 2)
                 noverlap = int(nperseg * 0.75)
             
             # === Ensure minimum signal length ===
-            min_signal_length = nperseg * 3
+            min_signal_length = nperseg * 2
             if signal_length < min_signal_length:
                 pad_length = min_signal_length - signal_length
                 signal = np.pad(signal, (0, pad_length), mode='reflect')
@@ -221,7 +221,7 @@ class EMGPreprocessor:
             
         except Exception as e:
             print(f"Error generating spectrogram: {str(e)}")
-            return np.zeros((256, 256), dtype=np.float32)
+            return np.zeros((64, 64), dtype=np.float32)
     
     def add_gaussian_noise(self, signal, noise_threshold=0.05): 
         """
@@ -563,7 +563,7 @@ if __name__ == "__main__":
                   0.2 * np.sin(2*np.pi*50*t))
     
     preprocessor = EMGPreprocessor(sampling_rate=fs, segment_length=2, 
-                                 window_size=120, n_frames=20)
+                                 window_size=128, n_frames=None)
     
     original_stats = preprocessor.get_signal_stats(emg_signal)
     print("\nOriginal Signal Stats:")

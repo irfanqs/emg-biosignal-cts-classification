@@ -34,7 +34,7 @@ class StandardCNNModel:
     - Regularization untuk mencegah overfitting
     """
     
-    def __init__(self, input_shape=(256, 256, 1), num_classes=4, 
+    def __init__(self, input_shape=(64, 64, 1), num_classes=4, 
                  num_filters=32, dropout_rate=0.5):
         self.input_shape = input_shape
         self.num_classes = num_classes
@@ -58,7 +58,7 @@ class StandardCNNModel:
                    kernel_constraint=MaxNorm(4))(x1)
         x1 = BatchNormalization()(x1)
         x1 = Activation('relu')(x1)
-        x1 = MaxPooling2D((2, 2))(x1)  # 256x256 -> 128x128
+        x1 = MaxPooling2D((2, 2))(x1)  # 64x64 -> 32x32
         x1 = Dropout(0.25)(x1)
         
         # === BLOCK 2: Mid-level features ===
@@ -184,20 +184,20 @@ class StandardLSTMModel:
         """Build Optimized LSTM Model"""
         # Handle input shape
         if isinstance(self.input_shape, (list, tuple)):
-            if len(self.input_shape) == 2:  # (256, 256) spectrogram
-                actual_input_shape = (256 * 256,)  # Flatten untuk LSTM
+            if len(self.input_shape) == 2:  # (64, 64) spectrogram
+                actual_input_shape = (64 * 64,)  # Flatten untuk LSTM
             elif len(self.input_shape) == 1:  # Already flattened
                 actual_input_shape = self.input_shape
             else:
-                actual_input_shape = (256 * 256,)
+                actual_input_shape = (64 * 64,)
         else:
-            actual_input_shape = (256 * 256,)
+            actual_input_shape = (64 * 64,)
         
         inputs = Input(shape=actual_input_shape, name='sequence_input')
         
         # Reshape untuk LSTM: (batch, timesteps, features)
-        # Spectrogram flattened -> reshape menjadi 256 timesteps dengan 256 features
-        x = Reshape((256, 256))(inputs)
+        # Spectrogram flattened -> reshape menjadi 64 timesteps dengan 64 features
+        x = Reshape((64, 64))(inputs)
         
         # === CONV1D untuk feature extraction awal ===
         x = tf.keras.layers.Conv1D(128, 5, padding='same', activation='relu')(x)
@@ -301,7 +301,7 @@ class StandardCNNLSTMModel:
     - 2 LSTM blocks untuk temporal modeling
     """
     
-    def __init__(self, input_shape=(256, 256, 1), num_classes=4,
+    def __init__(self, input_shape=(64, 64, 1), num_classes=4,
                  num_filters=32, lstm_units=64, dropout_rate=0.5):
         self.input_shape = input_shape
         self.num_classes = num_classes
@@ -326,7 +326,7 @@ class StandardCNNLSTMModel:
                    kernel_constraint=MaxNorm(3))(c1)
         c1 = BatchNormalization()(c1)
         c1 = Activation('relu')(c1)
-        c1 = MaxPooling2D((2, 2))(c1)  # 256x256 -> 128x128
+        c1 = MaxPooling2D((2, 2))(c1)  # 64x64 -> 32x32
         c1 = Dropout(0.3)(c1)
         
         # === CNN BLOCK 2 ===
@@ -426,7 +426,7 @@ class ModelBuilder:
     """Factory untuk membuat model - OPTIMIZED untuk jurnal"""
     
     @staticmethod
-    def build_standard_cnn(input_shape=(256, 256, 1), num_classes=4, **kwargs):
+    def build_standard_cnn(input_shape=(64, 64, 1), num_classes=4, **kwargs):
         """Build Standard CNN dengan 4 blocks"""
         model = StandardCNNModel(input_shape, num_classes, **kwargs)
         model.build_model()
@@ -442,7 +442,7 @@ class ModelBuilder:
         return model
     
     @staticmethod
-    def build_standard_cnn_lstm(input_shape=(256, 256, 1), num_classes=4, **kwargs):
+    def build_standard_cnn_lstm(input_shape=(64, 64, 1), num_classes=4, **kwargs):
         """Build CNN-LSTM Hybrid dengan 3 CNN + 2 LSTM"""
         model = StandardCNNLSTMModel(input_shape, num_classes, **kwargs)
         model.build_model()
