@@ -177,11 +177,13 @@ class EMGPipeline:
         
         analysis_dir = os.path.join(self.experiment_dir, 'channel_analysis')
         
+        sampling_rate = self.config.get('signal_processing', {}).get('sampling_rate', 12804)
+        
         self.channel_analysis_results = perform_complete_channel_analysis(
             self.raw_signals,
             self.labels,
             self.class_names,
-            sampling_rate=self.config.get('sampling_rate', 1000),
+            sampling_rate=sampling_rate,
             top_channels=min(10, self.raw_signals[0].shape[1]),
             save_dir=analysis_dir
         )
@@ -198,12 +200,15 @@ class EMGPipeline:
         print("STEP 3: FEATURE EXTRACTION (STFT Spectrograms)")
         print("="*80)
         
-        preprocessor = EMGPreprocessor(
-            sampling_rate=self.config.get('sampling_rate', 1000),
-            segment_length=self.config.get('segment_length', 10)
-        )
-        
+        # Get preprocessing config
         preprocessing_params = self.config.get('preprocessing', {})
+        segment_length = preprocessing_params.get('segment_length_seconds', 1.0)
+        sampling_rate = self.config.get('signal_processing', {}).get('sampling_rate', 12804)
+        
+        preprocessor = EMGPreprocessor(
+            sampling_rate=sampling_rate,
+            segment_length=segment_length
+        )
         
         print("\nProcessing signals to spectrograms...")
         
@@ -502,17 +507,22 @@ def create_default_config():
         'experiments_dir': 'experiments',
         'log_level': 'INFO',
         
-        'sampling_rate': 1000,
-        'segment_length': 10,
-        'max_files_per_class': None,
+        'signal_processing': {
+            'sampling_rate': 12804,
+            'auto_detect_sampling_rate': True
+        },
         
         'preprocessing': {
-            'apply_bandpass': True,
-            'apply_notch': True,
-            'normalize_method': 'rms',
+            'segment_length_seconds': 1.0,
             'segment_overlap': 0.5,
+            'min_segment_length': 500,
+            'apply_bandpass': True,
+            'bandpass_lowcut': 10,
+            'bandpass_highcut': 450,
+            'apply_notch': True,
+            'normalize_method': 'zscore',
             'augment_data': True,
-            'window_size': 512,
+            'window_size': 256,
             'n_frames': 20
         },
         

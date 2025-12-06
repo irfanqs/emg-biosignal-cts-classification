@@ -48,60 +48,60 @@ class StandardCNNModel:
         
         # === BLOCK 1: High-level features ===
         x1 = Conv2D(self.num_filters, (7, 7), padding='same', 
-                   kernel_regularizer=l1_l2(l1=0.0001, l2=0.0001),
+                   kernel_regularizer=l1_l2(l1=0.00001, l2=0.00001),
                    kernel_initializer=HeNormal(),
-                   kernel_constraint=MaxNorm(3))(inputs)
+                   kernel_constraint=MaxNorm(4))(inputs)
         x1 = BatchNormalization()(x1)
         x1 = Activation('relu')(x1)
         x1 = Conv2D(self.num_filters, (7, 7), padding='same',
-                   kernel_regularizer=l1_l2(l1=0.0001, l2=0.0001),
-                   kernel_constraint=MaxNorm(3))(x1)
+                   kernel_regularizer=l1_l2(l1=0.00001, l2=0.00001),
+                   kernel_constraint=MaxNorm(4))(x1)
         x1 = BatchNormalization()(x1)
         x1 = Activation('relu')(x1)
         x1 = MaxPooling2D((2, 2))(x1)  # 256x256 -> 128x128
-        x1 = Dropout(0.3)(x1)
+        x1 = Dropout(0.25)(x1)
         
         # === BLOCK 2: Mid-level features ===
         x2 = Conv2D(self.num_filters * 2, (5, 5), padding='same',
-                   kernel_regularizer=l1_l2(l1=0.0001, l2=0.0001),
-                   kernel_constraint=MaxNorm(3))(x1)
+                   kernel_regularizer=l1_l2(l1=0.00001, l2=0.00001),
+                   kernel_constraint=MaxNorm(4))(x1)
         x2 = BatchNormalization()(x2)
         x2 = Activation('relu')(x2)
         x2 = Conv2D(self.num_filters * 2, (5, 5), padding='same',
-                   kernel_regularizer=l1_l2(l1=0.0001, l2=0.0001),
-                   kernel_constraint=MaxNorm(3))(x2)
+                   kernel_regularizer=l1_l2(l1=0.00001, l2=0.00001),
+                   kernel_constraint=MaxNorm(4))(x2)
         x2 = BatchNormalization()(x2)
         x2 = Activation('relu')(x2)
         x2 = MaxPooling2D((2, 2))(x2)  # 128x128 -> 64x64
-        x2 = Dropout(0.4)(x2)
+        x2 = Dropout(0.3)(x2)
         
         # === BLOCK 3: Low-level features ===
         x3 = Conv2D(self.num_filters * 4, (3, 3), padding='same',
-                   kernel_regularizer=l1_l2(l1=0.0001, l2=0.0001),
-                   kernel_constraint=MaxNorm(3))(x2)
+                   kernel_regularizer=l1_l2(l1=0.00001, l2=0.00001),
+                   kernel_constraint=MaxNorm(4))(x2)
         x3 = BatchNormalization()(x3)
         x3 = Activation('relu')(x3)
         x3 = Conv2D(self.num_filters * 4, (3, 3), padding='same',
-                   kernel_regularizer=l1_l2(l1=0.0001, l2=0.0001),
-                   kernel_constraint=MaxNorm(3))(x3)
+                   kernel_regularizer=l1_l2(l1=0.00001, l2=0.00001),
+                   kernel_constraint=MaxNorm(4))(x3)
         x3 = BatchNormalization()(x3)
         x3 = Activation('relu')(x3)
         x3 = MaxPooling2D((2, 2))(x3)  # 64x64 -> 32x32
-        x3 = Dropout(0.4)(x3)
+        x3 = Dropout(0.35)(x3)
         
         # === BLOCK 4: Feature aggregation ===
         x4 = Conv2D(self.num_filters * 8, (3, 3), padding='same',
-                   kernel_regularizer=l1_l2(l1=0.0001, l2=0.0001),
-                   kernel_constraint=MaxNorm(3))(x3)
+                   kernel_regularizer=l1_l2(l1=0.00001, l2=0.00001),
+                   kernel_constraint=MaxNorm(4))(x3)
         x4 = BatchNormalization()(x4)
         x4 = Activation('relu')(x4)
         x4 = Conv2D(self.num_filters * 8, (3, 3), padding='same',
-                   kernel_regularizer=l1_l2(l1=0.0001, l2=0.0001),
-                   kernel_constraint=MaxNorm(3))(x4)
+                   kernel_regularizer=l1_l2(l1=0.00001, l2=0.00001),
+                   kernel_constraint=MaxNorm(4))(x4)
         x4 = BatchNormalization()(x4)
         x4 = Activation('relu')(x4)
         x4 = GlobalAveragePooling2D()(x4)  # 32x32 -> vector
-        x4 = Dropout(self.dropout_rate)(x4)
+        x4 = Dropout(0.4)(x4)
         
         # === MULTI-SCALE FEATURE FUSION ===
         # Global features dari setiap block
@@ -114,24 +114,24 @@ class StandardCNNModel:
         
         # === DENSE LAYERS dengan residual ===
         # Dense layer 1
-        d1 = Dense(512, kernel_regularizer=l1_l2(l1=0.0001, l2=0.0001),
+        d1 = Dense(512, kernel_regularizer=l1_l2(l1=0.00001, l2=0.00001),
                   kernel_initializer=HeNormal(),
-                  kernel_constraint=MaxNorm(3))(fused)
+                  kernel_constraint=MaxNorm(4))(fused)
         d1 = BatchNormalization()(d1)
         d1 = Activation('relu')(d1)
-        d1 = Dropout(0.5)(d1)
+        d1 = Dropout(0.4)(d1)
         
         # Dense layer 2 dengan skip connection
-        d2 = Dense(256, kernel_regularizer=l1_l2(l1=0.0001, l2=0.0001),
+        d2 = Dense(256, kernel_regularizer=l1_l2(l1=0.00001, l2=0.00001),
                   kernel_initializer=HeNormal(),
-                  kernel_constraint=MaxNorm(3))(d1)
+                  kernel_constraint=MaxNorm(4))(d1)
         d2 = BatchNormalization()(d2)
         d2 = Activation('relu')(d2)
-        d2 = Dropout(0.4)(d2)
+        d2 = Dropout(0.35)(d2)
         
         # Dense layer 3
-        d3 = Dense(128, kernel_regularizer=l1_l2(l1=0.0001, l2=0.0001),
-                  kernel_constraint=MaxNorm(3))(d2)
+        d3 = Dense(128, kernel_regularizer=l1_l2(l1=0.00001, l2=0.00001),
+                  kernel_constraint=MaxNorm(4))(d2)
         d3 = BatchNormalization()(d3)
         d3 = Activation('relu')(d3)
         d3 = Dropout(0.3)(d3)
@@ -142,9 +142,9 @@ class StandardCNNModel:
         self.model = Model(inputs, outputs, name='OptimizedCNN_4Blocks')
         return self.model
     
-    def compile_model(self, learning_rate=0.005, optimizer_type='adam'):
-        """Compile model dengan learning rate dari jurnal"""
-        # Untuk batch kecil, SGD dengan momentum sering lebih stabil
+    def compile_model(self, learning_rate=0.0001, optimizer_type='adam'):
+        """Compile model dengan learning rate optimal untuk batch 16"""
+        # Untuk batch 16, learning rate lebih kecil
         if optimizer_type == 'sgd':
             optimizer = SGD(learning_rate=learning_rate, 
                            momentum=0.9, 

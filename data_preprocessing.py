@@ -223,15 +223,17 @@ class EMGPreprocessor:
             print(f"Error generating spectrogram: {str(e)}")
             return np.zeros((256, 256), dtype=np.float32)
     
-    def add_gaussian_noise(self, signal, noise_threshold=0.3): 
+    def add_gaussian_noise(self, signal, noise_threshold=0.05): 
         """
         Add Gaussian noise untuk data augmentation
+        Conservative approach untuk medical signals
         """
         # Pastikan signal tidak nol
         signal_std = np.std(signal)
         if signal_std < 1e-6:
             signal_std = 0.1
         
+        # SNR-based noise addition
         noise = np.random.normal(0, noise_threshold * signal_std, signal.shape)
         noisy_signal = signal + noise
         return noisy_signal
@@ -366,28 +368,25 @@ class EMGPreprocessor:
                 spectrograms.append(spectrogram)
                 
                 if augment_with_noise:
-                    # Multiple noise levels
-                    for noise_level in [0.2, 0.3, 0.4]:
-                        noisy_segment = self.add_gaussian_noise(segment, noise_threshold=noise_level)
-                        noisy_spec = self.generate_stft_spectrogram(noisy_segment)
-                        if noisy_spec is not None:
-                            augmented_spectrograms.append(noisy_spec)
+                    # Single moderate noise level to avoid overfitting
+                    noisy_segment = self.add_gaussian_noise(segment, noise_threshold=0.05)
+                    noisy_spec = self.generate_stft_spectrogram(noisy_segment)
+                    if noisy_spec is not None and not np.all(noisy_spec == 0):
+                        augmented_spectrograms.append(noisy_spec)
                 
                 if augment_time_shift:
-                    # Multiple shift amounts
-                    for shift_ratio in [0.1, 0.2]:
-                        shifted_segment = self.add_time_shift_augmentation(segment, max_shift=shift_ratio)
-                        shifted_spec = self.generate_stft_spectrogram(shifted_segment)
-                        if shifted_spec is not None:
-                            augmented_spectrograms.append(shifted_spec)
+                    # Single time shift
+                    shifted_segment = self.add_time_shift_augmentation(segment, max_shift=0.05)
+                    shifted_spec = self.generate_stft_spectrogram(shifted_segment)
+                    if shifted_spec is not None and not np.all(shifted_spec == 0):
+                        augmented_spectrograms.append(shifted_spec)
                 
                 if augment_amplitude:
-                    # Multiple scaling factors
-                    for scale_range in [(0.8, 1.2), (0.9, 1.1)]:
-                        scaled_segment = self.add_amplitude_scaling(segment, scale_range=scale_range)
-                        scaled_spec = self.generate_stft_spectrogram(scaled_segment)
-                        if scaled_spec is not None:
-                            augmented_spectrograms.append(scaled_spec)
+                    # Single amplitude scaling
+                    scaled_segment = self.add_amplitude_scaling(segment, scale_range=(0.95, 1.05))
+                    scaled_spec = self.generate_stft_spectrogram(scaled_segment)
+                    if scaled_spec is not None and not np.all(scaled_spec == 0):
+                        augmented_spectrograms.append(scaled_spec)
             
             # Konversi ke numpy array
             if len(spectrograms) > 0:
